@@ -21,3 +21,5 @@ def menu():
 
 def main():
     menu()
+
+main()
