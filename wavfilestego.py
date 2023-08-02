@@ -4,6 +4,7 @@ from scipy.io import wavfile
 from scipy.signal import savgol_filter
 from os.path import dirname, join as pjoin
 import matplotlib.pyplot as plt
+#from sklearn.svm import SVC
 
 def extract_features(audio):
     """
@@ -13,6 +14,12 @@ def extract_features(audio):
     
     # Take second order derivative
     derivative = savgol_filter(audio, window_length=5, polyorder=2, deriv=2)
+
+    # Quantize to [-8, 8]
+    min_val = -8
+    max_val = 8
+    derivative = np.round((derivative - np.min(derivative)) / (np.max(derivative) - np.min(derivative)) * (max_val - min_val)) + min_val
+    derivative = derivative.astype(int)
     
     # Build joint and conditional matrices
     joint_matrix = np.zeros((17,17))
@@ -21,10 +28,11 @@ def extract_features(audio):
         for j in range(-8,9):
             joint_matrix[i+8,j+8] = np.sum((derivative[2:-2] == i) & (derivative[3:-1] == j))
             cond_count = np.sum(derivative[2:-2] == i)
-            if (cond_count > 0):
-                cond_matrix[i+8,j+8] = np.sum((derivative[2:-2] == i) & (derivative[3:-1] == j)) / np.sum(derivative[2:-2] == i)
+            if cond_count > 0 or cond_count < 0:
+                cond_matrix[i+8,j+8] = np.sum((derivative[2:-2] == i) & (derivative[3:-1] == j)) / cond_count
             else:
-                cond_matrix[i+8,j+8] = 0          
+                cond_matrix[i+8,j+8] = 0
+    
     # Randomly flip LSB and extract features from modified audio
     bit_flips = np.random.choice([0,1], size=len(audio))
     modified = audio.copy()
@@ -38,7 +46,7 @@ def extract_features(audio):
         for j in range(-8,9):
             mod_joint[i+8,j+8] = np.sum((mod_deriv[2:-2] == i) & (mod_deriv[3:-1] == j))
             mod_cond_count = np.sum(mod_deriv[2:-2] == i)
-            if (mod_cond_count > 0):
+            if mod_cond_count > 0 or mod_cond_count < 0:
                 mod_cond[i+8,j+8] = np.sum((mod_deriv[2:-2] == i) & (mod_deriv[3:-1] == j)) / np.sum(mod_deriv[2:-2] == i)
             else:
                 mod_cond[i+8,j+8] = 0
@@ -48,6 +56,14 @@ def extract_features(audio):
     cond_diff = cond_matrix - mod_cond
     
     # Return all 4 feature sets
+    print("Joint Matrix")
+    print(joint_matrix)
+    print("Cond Matrix")
+    print(cond_matrix)
+    print("Joint Diff")
+    print(joint_diff)
+    print("JCond Diff")
+    print(cond_diff)
     return joint_matrix, cond_matrix, joint_diff, cond_diff
 
 def select_features(features):
@@ -84,9 +100,24 @@ def select_features(features):
                 selected.append(cond[i,j])
                 selected.append(joint_diff[i,j])
                 selected.append(cond_diff[i,j])
-
-    print(np.array(selected))            
+     
     return np.array(selected)
+
+def train_model(features, labels):
+    """
+    Train SVM classifier on selected features
+    """
+    svm = SVC()
+    svm.fit(features, labels)
+    return svm
+
+def evaluate_model(svm, test_features, test_labels):
+    """
+    Evaluate model on test data
+    """
+    predictions = svm.predict(test_features)
+    accuracy = np.mean(predictions == test_labels)
+    return accuracy
 
 def menu():
     print("************WAV File Steganalysis**************")
@@ -101,10 +132,11 @@ def menu():
     if choice == "1":
         print("List")
     elif choice == "2":
-        samplerate, data = wavfile.read('Test.wav')
+        samplerate, data = wavfile.read('TestHidden.wav')
         data = data.astype(np.float16) / np.iinfo(data.dtype).max
         joint, cond, joint_diff, cond_diff = extract_features(data)
         selected = select_features((joint, cond, joint_diff, cond_diff))
+        print("Selected:")
         print(selected)
     else:
         print("Please only select 1 or 2")
