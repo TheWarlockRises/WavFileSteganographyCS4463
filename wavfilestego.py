@@ -1,5 +1,6 @@
 import numpy as np
 import scipy.io
+import os
 from scipy.io import wavfile
 from scipy.signal import savgol_filter
 from os.path import dirname, join as pjoin
@@ -24,9 +25,10 @@ def extract_features(audio):
     # Build joint and conditional matrices
     joint_matrix = np.zeros((17,17))
     cond_matrix = np.zeros((17,17))
+    N = len(derivative)
     for i in range(-8,9):
         for j in range(-8,9):
-            joint_matrix[i+8,j+8] = np.sum((derivative[2:-2] == i) & (derivative[3:-1] == j))
+            joint_matrix[i+8,j+8] = np.sum((derivative[1:N-2] == i) & (derivative[2:N-1] == j)) / (N-3)
             cond_count = np.sum(derivative[2:-2] == i)
             if cond_count > 0 or cond_count < 0:
                 cond_matrix[i+8,j+8] = np.sum((derivative[2:-2] == i) & (derivative[3:-1] == j)) / cond_count
@@ -40,6 +42,13 @@ def extract_features(audio):
     #modified[np.random.randn(len(audio)) > 0] = modified[np.random.randn(len(audio)) > 0] ^ 1
     
     mod_deriv = savgol_filter(modified, window_length=5, polyorder=2, deriv=2)
+
+    # Rescale derivative values to range from -1 to 1
+    mod_deriv = 2 * (mod_deriv - np.min(mod_deriv)) / (np.max(mod_deriv) - np.min(mod_deriv)) - 1
+
+    # Quantize derivative values to integers from -8 to 8
+    mod_deriv = np.round(mod_deriv * 8).astype(int)
+
     mod_joint = np.zeros((17,17))
     mod_cond = np.zeros((17,17))
     for i in range(-8,9):
@@ -51,6 +60,9 @@ def extract_features(audio):
             else:
                 mod_cond[i+8,j+8] = 0
     
+    #print(mod_joint)
+    #print(mod_cond)
+
     # Calculate difference        
     joint_diff = joint_matrix - mod_joint
     cond_diff = cond_matrix - mod_cond
@@ -130,7 +142,9 @@ def menu():
                         Please enter your choice: """)
     
     if choice == "1":
-        print("List")
+        for file in os.listdir():
+            if file.endswith(".wav"):
+                print(file)
     elif choice == "2":
         samplerate, data = wavfile.read('TestHidden.wav')
         data = data.astype(np.float16) / np.iinfo(data.dtype).max
