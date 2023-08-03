@@ -1,0 +1,7 @@
+Detecting hidden data and extracting it are two different things. When you taking it often times I would say in most cases it makes little difference with the actual messages. When trying to extract it of course it's helpful to know what you're extracting. Extraction is difficult. So if you focus on detection it really won't matter what kind of data is hidden at least not very much. You're in the test that I've done, the entropy does change some when you hide encrypted data but it's not super significant because you're hiding in the insignificant parts and I haven't really observed a situation where there was enough encrypted data better that made me think the entropy of the overall file was out of whack. Now you can look at the entropy of the extracted bits ...
+
+So I don't think it will matter but if you want to hide this text to start out with or whatever or just a specific file type like an encrypted file you can. In fact with an encrypted file you can simulate that just by hiding random data which is one of the options in my steg audio program. Yeah I certainly welcome to use that program to hide and extract for testing. I'm also happy to share the source code of a program that works with wav files if that will be helpful to you. If you're doing this in Python then python probably has libraries to do some of that stuff.
+
+Best thing you can do right now is send me a synopsis of the different techniques that you're reading about so I can kind of guide you what will work best
+
+John

@@ -6,6 +6,9 @@ from scipy.signal import savgol_filter
 import matplotlib.pyplot as plt
 import pandas as pd
 from sklearn.svm import SVC
+from sklearn.preprocessing import StandardScaler
+from keras.preprocessing.sequence import pad_sequences
+
 
 def extract_features(audio):
     """
@@ -113,7 +116,18 @@ def train_model(features, labels):
     Train SVM classifier on selected features
     """
     svm = SVC()
-    svm.fit(features, labels)
+    
+    # Pad Features to make features into a numpy array
+    features_padded = pad_sequences(features, maxlen=max([len(f) for f in features]), padding='post')
+    features_array = np.array(features_padded)
+
+    # Scale the padded numpy features
+    scaler = StandardScaler()
+    features_scaled = scaler.fit_transform(features_array)
+    
+    print(f"Features Shape: {features_scaled.shape}")
+    print(f"Labels Shape: {labels.shape}")
+    svm.fit(features_scaled, labels)
     return svm
 
 def evaluate_model(svm, test_features, test_labels):
