@@ -3,9 +3,9 @@ import scipy.io
 import os
 from scipy.io import wavfile
 from scipy.signal import savgol_filter
-from os.path import dirname, join as pjoin
 import matplotlib.pyplot as plt
-#from sklearn.svm import SVC
+import pandas as pd
+from sklearn.svm import SVC
 
 def extract_features(audio):
     """
@@ -68,14 +68,7 @@ def extract_features(audio):
     cond_diff = cond_matrix - mod_cond
     
     # Return all 4 feature sets
-    print("Joint Matrix")
-    print(joint_matrix)
-    print("Cond Matrix")
-    print(cond_matrix)
-    print("Joint Diff")
-    print(joint_diff)
-    print("JCond Diff")
-    print(cond_diff)
+
     return joint_matrix, cond_matrix, joint_diff, cond_diff
 
 def select_features(features):
@@ -146,12 +139,30 @@ def menu():
             if file.endswith(".wav"):
                 print(file)
     elif choice == "2":
-        samplerate, data = wavfile.read('TestHidden.wav')
-        data = data.astype(np.float16) / np.iinfo(data.dtype).max
-        joint, cond, joint_diff, cond_diff = extract_features(data)
-        selected = select_features((joint, cond, joint_diff, cond_diff))
-        print("Selected:")
-        print(selected)
+        features, labels = [], []
+        df = pd.read_csv('TrainingLabels.csv', header=None)
+        labels = np.array(df[1])
+        for file in os.listdir("training_data"):
+            f = os.path.join("training_data", file)
+            if os.path.isfile(f):
+                samplerate, data = wavfile.read(f)
+                data = data.astype(np.float16) / np.iinfo(data.dtype).max
+                joint, cond, joint_diff, cond_diff = extract_features(data)
+                selected = select_features((joint, cond, joint_diff, cond_diff))
+                features.append(selected)
+        svm = train_model(features, labels)
+
+        """test_features, test_labels = []
+        for file in test_filelist:
+            samplerate, data = wavfile.read(file)
+            data = data.astype(np.float16) / np.iinfo(data.dtype).max
+            joint, cond, joint_diff, cond_diff = extract_features(data)
+            test_selected = select_features((joint, cond, joint_diff, cond_diff))
+            test_features.append(test_selected)
+            #test_labels.append(1 if file has hidden data else 0)
+        accuracy = evaluate_model(svm, test_features, test_labels)
+        print("Accuracy:", accuracy)"""
+
     else:
         print("Please only select 1 or 2")
         print("Please try again")
