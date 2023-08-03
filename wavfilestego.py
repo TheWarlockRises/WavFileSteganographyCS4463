@@ -8,6 +8,7 @@ import pandas as pd
 from sklearn.svm import SVC
 from sklearn.preprocessing import StandardScaler
 from keras.preprocessing.sequence import pad_sequences
+import sys
 
 
 def extract_features(audio):
@@ -125,8 +126,8 @@ def train_model(features, labels):
     scaler = StandardScaler()
     features_scaled = scaler.fit_transform(features_array)
     
-    print(f"Features Shape: {features_scaled.shape}")
-    print(f"Labels Shape: {labels.shape}")
+    # print(f"Features Shape: {features_scaled.shape}")
+    # print(f"Labels Shape: {labels.shape}")
     svm.fit(features_scaled, labels)
     return svm
 
@@ -166,16 +167,17 @@ def menu():
                 features.append(selected)
         svm = train_model(features, labels)
 
-        """test_features, test_labels = []
-        for file in test_filelist:
-            samplerate, data = wavfile.read(file)
-            data = data.astype(np.float16) / np.iinfo(data.dtype).max
-            joint, cond, joint_diff, cond_diff = extract_features(data)
+        test_features, test_labels = [], []
+        test_file = sys.argv[1]
+        if os.path.isfile(test_file):
+            samplerate, data = wavfile.read(test_file)
+            test_data = data.astype(np.float16) / np.iinfo(data.dtype).max
+            joint, cond, joint_diff, cond_diff = extract_features(test_data)
             test_selected = select_features((joint, cond, joint_diff, cond_diff))
             test_features.append(test_selected)
             #test_labels.append(1 if file has hidden data else 0)
-        accuracy = evaluate_model(svm, test_features, test_labels)
-        print("Accuracy:", accuracy)"""
+            test_predictions = svm.predict(test_features)
+            print("Prediction: ", test_predictions)
 
     else:
         print("Please only select 1 or 2")
