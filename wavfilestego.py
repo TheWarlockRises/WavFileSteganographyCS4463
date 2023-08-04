@@ -1,3 +1,8 @@
+"""
+Title:  wavfilestego.py
+By:     Joseph D’Amico & Christopher Torres
+"""
+
 import numpy as np
 import scipy.io
 import os
@@ -63,9 +68,6 @@ def extract_features(audio):
                 mod_cond[i+8,j+8] = np.sum((mod_deriv[2:-2] == i) & (mod_deriv[3:-1] == j)) / np.sum(mod_deriv[2:-2] == i)
             else:
                 mod_cond[i+8,j+8] = 0
-    
-    #print(mod_joint)
-    #print(mod_cond)
 
     # Calculate difference        
     joint_diff = joint_matrix - mod_joint
@@ -128,69 +130,112 @@ def train_model(features, labels):
     features_scaled = scaler.fit_transform(features_array)
     svm = SVC()
     
-    # print(f"Features Shape: {features_scaled.shape}")
-    # print(f"Labels Shape: {labels.shape}")
+
     svm.fit(features_scaled, labels)
     return svm, scaler, max_seq_len
 
-def evaluate_model(svm, scaler, max_seq_len, test_features, test_labels):
+def evaluate_model(svm, scaler, max_seq_len, test_features, test_labels, test_file):
     """
     Evaluate model on test data 
     """
 
+    # Pad test features to convert into a numpy array
     test_padded = pad_sequences(test_features, maxlen=max_seq_len, padding='post')
+
+    # Scale padded test features to reduce effect of padding
     test_scaled = scaler.transform(test_padded)
+
+    # Generate Prediction based on the test features.
     predictions = svm.predict(test_scaled)
+
+    # Calculate Accuracy
     accuracy = np.mean(predictions == test_labels)
+
+    # Remove Pre-existing test_output.csv
+    if os.path.exists('test_output.csv'):
+        os.remove('test_output.csv')
+
+    # Output predictions to test_output.csv
+    with open('test_output.csv', 'w') as f:
+        for i, prediction in enumerate(predictions):
+            f.write(f"{test_file[i]}, {prediction}\n")
+
     return accuracy
 
-def menu():
-    print("************WAV File Steganalysis**************")
-    print()
+def option_two(): # Rename later
+    # Train the model
+    features, labels = [], []
+    df = pd.read_csv('TrainingLabels.csv', header=None)
+    labels = np.array(df[1])
+    for file in os.listdir("training_data"):
+        f = os.path.join("training_data", file)
+        if os.path.isfile(f):
+            samplerate, data = wavfile.read(f)
+            data = data.astype(np.float16) / np.iinfo(data.dtype).max
+            joint, cond, joint_diff, cond_diff = extract_features(data)
+            selected = select_features((joint, cond, joint_diff, cond_diff))
+            features.append(selected)
+    svm, scaler, max_seq_len = train_model(features, labels)
 
-    choice = input("""
-                        1. List Available Files for Steganalysis
-                        2. Analyze a File
-                   
-                        Please enter your choice: """)
+    # Test the model
+    test_features, test_labels, test_files = [], [], []
+    df = pd.read_csv('TestingLabels.csv', header=None)
+    test_labels = np.array(df[1])
+    for test_file in os.listdir("testing_data"):
+        test_f = os.path.join("testing_data", test_file)
+        if os.path.isfile(test_f):
+            samplerate, data = wavfile.read(test_f)
+            test_data = data.astype(np.float16) / np.iinfo(data.dtype).max
+            joint, cond, joint_diff, cond_diff = extract_features(test_data)
+            test_selected = select_features((joint, cond, joint_diff, cond_diff))
+            test_features.append(test_selected)
+            test_files.append(test_file)
     
+    # Evaluate model accuracy and print it out.
+    accuracy = evaluate_model(svm, scaler, max_seq_len, test_features, test_labels, test_files)
+    print("Accuracy: ", accuracy)
+
+    # Return to the menu. Add spacing for aesthetics
+    print()
+    menu()
+
+# Options for the menu.
+def menu_options(choice):
+    # Print all WAV file in the current directory maybe we can use this to select a directory for testing? Or we can just remove it.
     if choice == "1":
         for file in os.listdir():
             if file.endswith(".wav"):
                 print(file)
+        print()
+        menu()    
+
+    # Train and Test Model
     elif choice == "2":
-        features, labels = [], []
-        df = pd.read_csv('TrainingLabels.csv', header=None)
-        labels = np.array(df[1])
-        for file in os.listdir("training_data"):
-            f = os.path.join("training_data", file)
-            if os.path.isfile(f):
-                samplerate, data = wavfile.read(f)
-                data = data.astype(np.float16) / np.iinfo(data.dtype).max
-                joint, cond, joint_diff, cond_diff = extract_features(data)
-                selected = select_features((joint, cond, joint_diff, cond_diff))
-                features.append(selected)
-        svm, scaler, max_seq_len = train_model(features, labels)
+        option_two()
+    
+    # Exit Program
+    elif choice == "3":
+        sys.exit(0)
 
-        test_features, test_labels = [], []
-        df = pd.read_csv('TestingLabels.csv', header=None)
-        test_labels = np.array(df[1])
-        for test_file in os.listdir("testing_data"):
-            test_f = os.path.join("testing_data", test_file)
-            if os.path.isfile(test_f):
-                samplerate, data = wavfile.read(test_f)
-                test_data = data.astype(np.float16) / np.iinfo(data.dtype).max
-                joint, cond, joint_diff, cond_diff = extract_features(test_data)
-                test_selected = select_features((joint, cond, joint_diff, cond_diff))
-                test_features.append(test_selected)
-        accuracy = evaluate_model(svm, scaler, max_seq_len, test_features, test_labels)
-        print("Accuracy: ", accuracy)
-
+    # Invalid Option give warning then calls menu.
     else:
-        print("Please only select 1 or 2")
-        print("Please try again")
+        print("Please only select 1, 2, or 3")
+        print("Please try again\n")
         menu()
 
+# Menu for the Program
+def menu():
+    print("+-----------------------------------------------+")
+    print("|************WAV File Steganalysis**************|")
+    print("| 1. List Available Files for Steganalysis      |")
+    print("| 2. Analyze a File                             |")
+    print("| 3. Exit Program                               |")
+    print("+-----------------------------------------------+")
+
+    choice = input("Please enter your choice: ")
+    menu_options(choice)
+    
+# Main function calls menu
 def main():
     menu()
 
