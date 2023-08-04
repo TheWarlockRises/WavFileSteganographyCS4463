@@ -1,9 +1,14 @@
 """
+
 Programmed by Joseph D'Amico and Christopher Torres
+
+An implementation of Detecting information-hiding in WAV audios 
+by Qingzhong Liu, Andrew H. Sung, and Mengyu Qiao
+https://ieeexplore.ieee.org/document/4761650
+
 """
 
 import numpy as np
-import scipy.io
 import os
 from scipy.io import wavfile
 from scipy.signal import savgol_filter
@@ -83,7 +88,9 @@ def select_features(features):
     selected = []
     
     joint, cond, joint_diff, cond_diff = features
-    threshold = np.percentile(joint, 90)
+
+    #Threshold filters out features with low occurrence while keeping more common ones
+    threshold = np.percentile(joint, 80)
     
     for i in range(17):
         for j in range(17):
@@ -161,7 +168,7 @@ def evaluate_model(svm, scaler, max_seq_len, test_features, test_labels, test_fi
 
     return accuracy
 
-def option_two(): # Rename later
+def option_two():
     # Train the model
     features, labels = [], []
     df = pd.read_csv('TrainingLabels.csv', header=None)
@@ -227,7 +234,7 @@ def menu():
     print("+-----------------------------------------------+")
     print("|************WAV File Steganalysis**************|")
     print("| 1. List Available Files for Steganalysis      |")
-    print("| 2. Analyze a File                             |")
+    print("| 2. Analyze Files                             |")
     print("| 3. Exit Program                               |")
     print("+-----------------------------------------------+")
 
