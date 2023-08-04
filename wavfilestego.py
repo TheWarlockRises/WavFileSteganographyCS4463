@@ -1,3 +1,7 @@
+"""
+Programmed by Joseph D'Amico and Christopher Torres
+"""
+
 import numpy as np
 import scipy.io
 import os
