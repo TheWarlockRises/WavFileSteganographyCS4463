@@ -1,9 +1,14 @@
 """
+
 Programmed by Joseph D'Amico and Christopher Torres
+
+An implementation of Detecting information-hiding in WAV audios 
+by Qingzhong Liu, Andrew H. Sung, and Mengyu Qiao
+https://ieeexplore.ieee.org/document/4761650
+
 """
 
 import numpy as np
-import scipy.io
 import os
 from scipy.io import wavfile
 from scipy.signal import savgol_filter
@@ -87,7 +92,9 @@ def select_features(features):
     selected = []
     
     joint, cond, joint_diff, cond_diff = features
-    threshold = np.percentile(joint, 90)
+
+    #Threshold filters out features with low occurrence while keeping more common ones
+    threshold = np.percentile(joint, 80)
     
     for i in range(17):
         for j in range(17):
@@ -169,7 +176,7 @@ def getTestingFolderFilePath():
     while True:
         path = input("Enter the path of the file or folder (or enter 'q' to quit): ")
         if path.lower() == 'q':
-            path = "testing_data"
+            path = "testing_data_1lsb"
             return path
         if os.path.exists(path):
             if os.path.isfile(path):
@@ -185,7 +192,7 @@ def getTestingLabel():
     while True:
         path = input("Enter the path of the CSV file (or enter 'q' to quit): ")
         if path.lower() == 'q':
-            return 'TestingLabels.csv'
+            return 'TestingLabels_1lsb.csv'
         if os.path.exists(path) and path.endswith('.csv'):
             try:
                 with open(path, 'r') as f:
@@ -293,6 +300,7 @@ def menu_options(choice):
 
 # Menu for the Program
 def menu():
+    testing_files, testing_label = "testing_data", "TestingLabels.csv"
 
     print("+-----------------------------------------------+")
     print("|************WAV File Steganalysis**************|")
