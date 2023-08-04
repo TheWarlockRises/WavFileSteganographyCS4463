@@ -22,7 +22,8 @@ import csv
 
 choice = 0
 lsbBitNum = 1
-testing_files, testing_label = "testing_data", "TestingLabels.csv"
+testing_files, testing_label = "testing_data_1lsb", "TestingLabels_1lsb.csv"
+training_files, training_labels = "training_data_1lsb", "TrainingLabels_1lsb.csv"
 
 def extract_features(audio):
     """
@@ -250,7 +251,7 @@ def option_two(training_files, training_labels, testing_files, testing_labels): 
 # Options for the menu.
 def menu_options(choice):
     # Print all WAV file in the current directory maybe we can use this to select a directory for testing? Or we can just remove it.
-    global testing_files, testing_labels, lsbBitNum
+    global training_files, training_labels, testing_files, testing_labels, lsbBitNum
     if choice == "1":
         if os.path.exists(testing_files):
             if os.path.isfile(testing_files):
@@ -270,15 +271,12 @@ def menu_options(choice):
 
     # Train and Test Model
     elif choice == "3":
-        print(lsbBitNum)
-        training_files, training_labels = "training_data", 'TrainingLabels.csv'
         option_two(training_files, training_labels, testing_files, testing_labels)
-    
 
     # Select LSB bit number
     elif choice == "4":
         while True:
-            lsbBitNum = input("Enter a number between 1 and 9 (or enter 'q' to quit): ")
+            lsbBitNum = input("Enter a LSB bit value between 1 and 9 (9 selects ALL) (or enter 'q' to quit): ")
             if lsbBitNum.lower() == 'q':
                 lsbBitNum = 1
                 break
@@ -286,6 +284,11 @@ def menu_options(choice):
                 break
             else:
                 print(f"Error: {lsbBitNum} is not a valid number. Please try again.")
+        if lsbBitNum.isdigit() and int(lsbBitNum) == 9:
+            training_files, training_labels = "training_data_all", "TrainingLabels_all.csv"
+        else:
+            training_files, training_labels = f"training_data_{lsbBitNum}lsb", f"TrainingLabels_{lsbBitNum}lsb.csv"
+        print(f"Selected Training Files: {training_files}")
         menu()
 
     # Exit Program
