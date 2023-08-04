@@ -116,26 +116,31 @@ def train_model(features, labels):
     """
     Train SVM classifier on selected features
     """
-    svm = SVC()
-    
+
+    max_seq_len = max([len(f) for f in features])
+
     # Pad Features to make features into a numpy array
-    features_padded = pad_sequences(features, maxlen=max([len(f) for f in features]), padding='post')
+    features_padded = pad_sequences(features, maxlen=max_seq_len, padding='post')
     features_array = np.array(features_padded)
 
-    # Scale the padded numpy features
+     # Scale the padded numpy features
     scaler = StandardScaler()
     features_scaled = scaler.fit_transform(features_array)
+    svm = SVC()
     
     # print(f"Features Shape: {features_scaled.shape}")
     # print(f"Labels Shape: {labels.shape}")
     svm.fit(features_scaled, labels)
-    return svm
+    return svm, scaler, max_seq_len
 
-def evaluate_model(svm, test_features, test_labels):
+def evaluate_model(svm, scaler, max_seq_len, test_features, test_labels):
     """
-    Evaluate model on test data
+    Evaluate model on test data 
     """
-    predictions = svm.predict(test_features)
+
+    test_padded = pad_sequences(test_features, maxlen=max_seq_len, padding='post')
+    test_scaled = scaler.transform(test_padded)
+    predictions = svm.predict(test_scaled)
     accuracy = np.mean(predictions == test_labels)
     return accuracy
 
@@ -165,19 +170,21 @@ def menu():
                 joint, cond, joint_diff, cond_diff = extract_features(data)
                 selected = select_features((joint, cond, joint_diff, cond_diff))
                 features.append(selected)
-        svm = train_model(features, labels)
+        svm, scaler, max_seq_len = train_model(features, labels)
 
         test_features, test_labels = [], []
-        test_file = sys.argv[1]
-        if os.path.isfile(test_file):
-            samplerate, data = wavfile.read(test_file)
-            test_data = data.astype(np.float16) / np.iinfo(data.dtype).max
-            joint, cond, joint_diff, cond_diff = extract_features(test_data)
-            test_selected = select_features((joint, cond, joint_diff, cond_diff))
-            test_features.append(test_selected)
-            #test_labels.append(1 if file has hidden data else 0)
-            test_predictions = svm.predict(test_features)
-            print("Prediction: ", test_predictions)
+        df = pd.read_csv('TestingLabels.csv', header=None)
+        test_labels = np.array(df[1])
+        for test_file in os.listdir("testing_data"):
+            test_f = os.path.join("testing_data", test_file)
+            if os.path.isfile(test_f):
+                samplerate, data = wavfile.read(test_f)
+                test_data = data.astype(np.float16) / np.iinfo(data.dtype).max
+                joint, cond, joint_diff, cond_diff = extract_features(test_data)
+                test_selected = select_features((joint, cond, joint_diff, cond_diff))
+                test_features.append(test_selected)
+        accuracy = evaluate_model(svm, scaler, max_seq_len, test_features, test_labels)
+        print("Accuracy: ", accuracy)
 
     else:
         print("Please only select 1 or 2")
