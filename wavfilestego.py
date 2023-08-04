@@ -164,7 +164,7 @@ def evaluate_model(svm, scaler, max_seq_len, test_features, test_labels, test_fi
     # Output predictions to test_output.csv
     with open('test_output.csv', 'w') as f:
         for i, prediction in enumerate(predictions):
-            f.write(f"{test_file[i]}, {prediction}\n")
+            f.write(f"{test_file[i]}, {test_labels[i]}, {prediction}\n")
 
     return accuracy
 
