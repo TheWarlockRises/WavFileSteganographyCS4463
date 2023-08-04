@@ -22,8 +22,8 @@ import csv
 
 choice = 0
 lsbBitNum = 1
-testing_files, testing_label = "testing_data_1lsb", "TestingLabels_1lsb.csv"
-training_files, training_labels = "training_data_1lsb", "TrainingLabels_1lsb.csv"
+testing_files, testing_labels = "testing_data_folders", "testing_labels_folder"
+training_files, training_labels = "training_data_folders", "training_labels_folder"
 
 def extract_features(audio):
     """
@@ -177,7 +177,7 @@ def getTestingFolderFilePath():
     while True:
         path = input("Enter the path of the file or folder (or enter 'q' to quit): ")
         if path.lower() == 'q':
-            path = "testing_data_1lsb"
+            path = "testing_data_folders/testing_data_all"
             return path
         if os.path.exists(path):
             if os.path.isfile(path):
@@ -193,7 +193,7 @@ def getTestingLabel():
     while True:
         path = input("Enter the path of the CSV file (or enter 'q' to quit): ")
         if path.lower() == 'q':
-            return 'TestingLabels_1lsb.csv'
+            return 'training_labels_folder/TrainingLabels_all.csv'
         if os.path.exists(path) and path.endswith('.csv'):
             try:
                 with open(path, 'r') as f:
@@ -303,7 +303,7 @@ def menu_options(choice):
 
 # Menu for the Program
 def menu():
-    testing_files, testing_label = "testing_data", "TestingLabels.csv"
+    #testing_files, testing_label = "testing_data", "TestingLabels.csv"
 
     print("+-----------------------------------------------+")
     print("|************WAV File Steganalysis**************|")
