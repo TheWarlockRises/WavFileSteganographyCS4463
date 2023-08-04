@@ -15,6 +15,10 @@ from keras.preprocessing.sequence import pad_sequences
 import sys
 import csv
 
+choice = 0
+lsbBitNum = 1
+testing_files, testing_label = "testing_data", "TestingLabels.csv"
+
 def extract_features(audio):
     """
     Extract joint distribution and Markov features from 
@@ -199,13 +203,13 @@ def option_one(): # Rename later
     return selected_testing, selected_label
        
 
-def option_two(testing_files, testing_labels): # Rename later
+def option_two(training_files, training_labels, testing_files, testing_labels): # Rename later
     # Train the model
     features, labels = [], []
-    df = pd.read_csv('TrainingLabels.csv', header=None)
+    df = pd.read_csv(training_labels, header=None)
     labels = np.array(df[1])
-    for file in os.listdir("training_data"):
-        f = os.path.join("training_data", file)
+    for file in os.listdir(training_files):
+        f = os.path.join(training_files, file)
         if os.path.isfile(f):
             samplerate, data = wavfile.read(f)
             data = data.astype(np.float16) / np.iinfo(data.dtype).max
@@ -237,44 +241,74 @@ def option_two(testing_files, testing_labels): # Rename later
     menu()
 
 # Options for the menu.
-def menu_options(choice, testing_files, testing_labels):
+def menu_options(choice):
     # Print all WAV file in the current directory maybe we can use this to select a directory for testing? Or we can just remove it.
-    
+    global testing_files, testing_labels, lsbBitNum
     if choice == "1":
+        if os.path.exists(testing_files):
+            if os.path.isfile(testing_files):
+                print(f"File name: {os.path.basename(testing_files)}")
+            elif os.path.isdir(testing_files):
+                print(f"Contents of {os.path.basename(testing_files)}:")
+                for item in os.listdir(testing_files):
+                    print(f"- {item}")
+        else:
+            print(f"Error: {testing_files} does not exist.")
+        menu()
+
+    elif choice == "2":
         testing_files, testing_labels = option_one() 
         print()
         menu()
 
     # Train and Test Model
-    elif choice == "2":
-        option_two(testing_files, testing_labels)
-    
-    # Exit Program
     elif choice == "3":
+        print(lsbBitNum)
+        training_files, training_labels = "training_data", 'TrainingLabels.csv'
+        option_two(training_files, training_labels, testing_files, testing_labels)
+    
+
+    # Select LSB bit number
+    elif choice == "4":
+        while True:
+            lsbBitNum = input("Enter a number between 1 and 9 (or enter 'q' to quit): ")
+            if lsbBitNum.lower() == 'q':
+                lsbBitNum = 1
+                break
+            elif lsbBitNum.isdigit() and 1 <= int(lsbBitNum) <= 9:
+                break
+            else:
+                print(f"Error: {lsbBitNum} is not a valid number. Please try again.")
+        menu()
+
+    # Exit Program
+    elif choice == "5":
         sys.exit(0)
 
     # Invalid Option give warning then calls menu.
     else:
-        print("Please only select 1, 2, or 3")
+        print("Please only select an value between 1-5")
         print("Please try again\n")
         menu()
 
 # Menu for the Program
 def menu():
-    testing_files, testing_label = "testing_data", "TestingLabels.csv"
 
     print("+-----------------------------------------------+")
     print("|************WAV File Steganalysis**************|")
     print("| 1. List Available Files for Steganalysis      |")
-    print("| 2. Analyze a File                             |")
-    print("| 3. Exit Program                               |")
+    print("| 2. Analyze Select Test File & Label CSV       |")
+    print("| 3. Train and Test Model                       |")
+    print("| 4. Enter LSB Value for Training               |")
+    print("| 5. Exit Program                               |")
     print("+-----------------------------------------------+")
 
     choice = input("Please enter your choice: ")
-    menu_options(choice, testing_files, testing_label)
+    menu_options(choice)
     
 # Main function calls menu
 def main():
+
     menu()
 
 main()
