@@ -24,6 +24,7 @@ choice = 0
 lsbBitNum = 1
 testing_files, testing_label = "testing_data_1lsb", "TestingLabels_1lsb.csv"
 training_files, training_labels = "training_data_1lsb", "TrainingLabels_1lsb.csv"
+steg_files = ""
 
 def extract_features(audio):
     """
@@ -189,29 +190,13 @@ def getTestingFolderFilePath():
         else:
             print(f"Error: {path} does not exist. Please try again.")
 
-def getTestingLabel():
-    while True:
-        path = input("Enter the path of the CSV file (or enter 'q' to quit): ")
-        if path.lower() == 'q':
-            return 'TestingLabels_1lsb.csv'
-        if os.path.exists(path) and path.endswith('.csv'):
-            try:
-                with open(path, 'r') as f:
-                    print(f"CSV file {path} opened successfully.")
-                    return path
-            except:
-                print(f"Error: Unable to open {path}.")
-        else:
-            print(f"Error: {path} does not exist or is not a CSV file. Please try again.")
+def option_two(): # Rename later
+    steg_testing = getTestingFolderFilePath()
 
-def option_one(): # Rename later
-    selected_testing = getTestingFolderFilePath()
-    selected_label = getTestingLabel()
-
-    return selected_testing, selected_label
+    return steg_testing
        
 
-def option_two(training_files, training_labels, testing_files, testing_labels): # Rename later
+def option_three(training_files, training_labels, testing_files, testing_labels): # Rename later
     # Train the model
     features, labels = [], []
     df = pd.read_csv(training_labels, header=None)
@@ -244,7 +229,7 @@ def option_two(training_files, training_labels, testing_files, testing_labels): 
     accuracy = evaluate_model(svm, scaler, max_seq_len, test_features, test_labels, test_files)
     print("Accuracy: ", accuracy)
 
-    # Return to the menu. Add spacing for aesthetics
+    # Return to the menu
     print()
     menu()
 
@@ -264,17 +249,8 @@ def menu_options(choice):
             print(f"Error: {testing_files} does not exist.")
         menu()
 
-    elif choice == "2":
-        testing_files, testing_labels = option_one() 
-        print()
-        menu()
-
-    # Train and Test Model
-    elif choice == "3":
-        option_two(training_files, training_labels, testing_files, testing_labels)
-
     # Select LSB bit number
-    elif choice == "4":
+    elif choice == "2":
         while True:
             lsbBitNum = input("Enter a LSB bit value between 1 and 9 (9 selects ALL) (or enter 'q' to quit): ")
             if lsbBitNum.lower() == 'q':
@@ -285,11 +261,23 @@ def menu_options(choice):
             else:
                 print(f"Error: {lsbBitNum} is not a valid number. Please try again.")
         if lsbBitNum.isdigit() and int(lsbBitNum) == 9:
+            testing_files, testing_labels = "testing_data_all", "TestingLabels_all.csv"
             training_files, training_labels = "training_data_all", "TrainingLabels_all.csv"
         else:
+            testing_files, testing_labels = f"testing_data_{lsbBitNum}lsb", f"TestingLabels_{lsbBitNum}lsb.csv"
             training_files, training_labels = f"training_data_{lsbBitNum}lsb", f"TrainingLabels_{lsbBitNum}lsb.csv"
         print(f"Selected Training Files: {training_files}")
         menu()
+
+    # Select File to Analyze
+    elif choice == "3":
+        steg_files = option_two()
+        print()
+        menu()
+
+    # Train and Test Model
+    elif choice == "4":
+        option_three(training_files, training_labels, testing_files, testing_labels)    
 
     # Exit Program
     elif choice == "5":
@@ -308,9 +296,9 @@ def menu():
     print("+-----------------------------------------------+")
     print("|************WAV File Steganalysis**************|")
     print("| 1. List Available Files for Steganalysis      |")
-    print("| 2. Analyze Select Test File & Label CSV       |")
-    print("| 3. Train and Test Model                       |")
-    print("| 4. Enter LSB Value for Training               |")
+    print("| 2. Enter LSB Value for Training               |")
+    print("| 3. Select File to Analyze                     |")
+    print("| 4. Train and Test Model                       |")
     print("| 5. Exit Program                               |")
     print("+-----------------------------------------------+")
 
