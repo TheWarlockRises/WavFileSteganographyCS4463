@@ -1,6 +1,5 @@
 """
-Title:  wavfilestego.py
-By:     Joseph D’Amico & Christopher Torres
+Programmed by Joseph D'Amico and Christopher Torres
 """
 
 import numpy as np
