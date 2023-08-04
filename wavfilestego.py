@@ -13,7 +13,7 @@ from sklearn.svm import SVC
 from sklearn.preprocessing import StandardScaler
 from keras.preprocessing.sequence import pad_sequences
 import sys
-
+import csv
 
 def extract_features(audio):
     """
@@ -161,7 +161,45 @@ def evaluate_model(svm, scaler, max_seq_len, test_features, test_labels, test_fi
 
     return accuracy
 
-def option_two(): # Rename later
+def getTestingFolderFilePath():
+    while True:
+        path = input("Enter the path of the file or folder (or enter 'q' to quit): ")
+        if path.lower() == 'q':
+            path = "testing_data"
+            return path
+        if os.path.exists(path):
+            if os.path.isfile(path):
+                print(f"File {path} selected successfully.")
+                return path
+            elif os.path.isdir(path):
+                print(f"Directory {path} selected successfully.")
+                return path
+        else:
+            print(f"Error: {path} does not exist. Please try again.")
+
+def getTestingLabel():
+    while True:
+        path = input("Enter the path of the CSV file (or enter 'q' to quit): ")
+        if path.lower() == 'q':
+            return 'TestingLabels.csv'
+        if os.path.exists(path) and path.endswith('.csv'):
+            try:
+                with open(path, 'r') as f:
+                    print(f"CSV file {path} opened successfully.")
+                    return path
+            except:
+                print(f"Error: Unable to open {path}.")
+        else:
+            print(f"Error: {path} does not exist or is not a CSV file. Please try again.")
+
+def option_one(): # Rename later
+    selected_testing = getTestingFolderFilePath()
+    selected_label = getTestingLabel()
+
+    return selected_testing, selected_label
+       
+
+def option_two(testing_files, testing_labels): # Rename later
     # Train the model
     features, labels = [], []
     df = pd.read_csv('TrainingLabels.csv', header=None)
@@ -178,10 +216,10 @@ def option_two(): # Rename later
 
     # Test the model
     test_features, test_labels, test_files = [], [], []
-    df = pd.read_csv('TestingLabels.csv', header=None)
+    df = pd.read_csv(testing_labels, header=None)
     test_labels = np.array(df[1])
-    for test_file in os.listdir("testing_data"):
-        test_f = os.path.join("testing_data", test_file)
+    for test_file in os.listdir(testing_files):
+        test_f = os.path.join(testing_files, test_file)
         if os.path.isfile(test_f):
             samplerate, data = wavfile.read(test_f)
             test_data = data.astype(np.float16) / np.iinfo(data.dtype).max
@@ -199,18 +237,17 @@ def option_two(): # Rename later
     menu()
 
 # Options for the menu.
-def menu_options(choice):
+def menu_options(choice, testing_files, testing_labels):
     # Print all WAV file in the current directory maybe we can use this to select a directory for testing? Or we can just remove it.
+    
     if choice == "1":
-        for file in os.listdir():
-            if file.endswith(".wav"):
-                print(file)
+        testing_files, testing_labels = option_one() 
         print()
-        menu()    
+        menu()
 
     # Train and Test Model
     elif choice == "2":
-        option_two()
+        option_two(testing_files, testing_labels)
     
     # Exit Program
     elif choice == "3":
@@ -224,6 +261,8 @@ def menu_options(choice):
 
 # Menu for the Program
 def menu():
+    testing_files, testing_label = "testing_data", "TestingLabels.csv"
+
     print("+-----------------------------------------------+")
     print("|************WAV File Steganalysis**************|")
     print("| 1. List Available Files for Steganalysis      |")
@@ -232,7 +271,7 @@ def menu():
     print("+-----------------------------------------------+")
 
     choice = input("Please enter your choice: ")
-    menu_options(choice)
+    menu_options(choice, testing_files, testing_label)
     
 # Main function calls menu
 def main():
