@@ -22,9 +22,9 @@ import csv
 
 choice = 0
 lsbBitNum = 1
-testing_files, testing_label = "testing_data_1lsb", "TestingLabels_1lsb.csv"
-training_files, training_labels = "training_data_1lsb", "TrainingLabels_1lsb.csv"
-steg_files = ""
+testing_files, testing_labels = "testing_data_folders", "testing_labels_folder"
+training_files, training_labels = "training_data_folders", "training_labels_folder"
+steg_files = "steganalysis_files"
 
 def extract_features(audio):
     """
@@ -146,19 +146,22 @@ def train_model(features, labels):
     svm.fit(features_scaled, labels)
     return svm, scaler, max_seq_len
 
-def evaluate_model(svm, scaler, max_seq_len, test_features, test_labels, test_file):
+def evaluate_model(svm, scaler, max_seq_len, test_features, test_labels, test_file, steg_features, steg_files):
     """
     Evaluate model on test data 
     """
 
     # Pad test features to convert into a numpy array
     test_padded = pad_sequences(test_features, maxlen=max_seq_len, padding='post')
+    steg_padded = pad_sequences(steg_features, maxlen=max_seq_len, padding='post')
 
     # Scale padded test features to reduce effect of padding
     test_scaled = scaler.transform(test_padded)
+    steg_scaled = scaler.transform(steg_padded)
 
     # Generate Prediction based on the test features.
     predictions = svm.predict(test_scaled)
+    steg_predictions = svm.predict(steg_scaled)
 
     # Calculate Accuracy
     accuracy = np.mean(predictions == test_labels)
@@ -167,18 +170,29 @@ def evaluate_model(svm, scaler, max_seq_len, test_features, test_labels, test_fi
     if os.path.exists('test_output.csv'):
         os.remove('test_output.csv')
 
+    # Remove Pre-existing steg_output.csv
+    if os.path.exists('steg_output.csv'):
+        os.remove('steg_output.csv')
+
     # Output predictions to test_output.csv
     with open('test_output.csv', 'w') as f:
         for i, prediction in enumerate(predictions):
             f.write(f"{test_file[i]}, {test_labels[i]}, {prediction}\n")
 
-    return accuracy
+    # Output predictions to steg_output.csv
+    with open('steg_output.csv', 'w') as f:
+        for i, steg_prediction in enumerate(steg_predictions):
+            f.write(f"{steg_files[i]}, 1, {steg_prediction}\n")
+
+    steg_final = pd.read_csv("steg_output.csv", header=None)
+
+    return accuracy, steg_final
 
 def getTestingFolderFilePath():
     while True:
         path = input("Enter the path of the file or folder (or enter 'q' to quit): ")
         if path.lower() == 'q':
-            path = "testing_data_folders/testing_data_all"
+            path = "steganalysis_files"
             return path
         if os.path.exists(path):
             if os.path.isfile(path):
@@ -196,7 +210,7 @@ def option_two(): # Rename later
     return steg_testing
        
 
-def option_three(training_files, training_labels, testing_files, testing_labels): # Rename later
+def option_three(training_files, training_labels, testing_files, testing_labels, steg_files): # Rename later
     # Train the model
     features, labels = [], []
     df = pd.read_csv(training_labels, header=None)
@@ -224,10 +238,24 @@ def option_three(training_files, training_labels, testing_files, testing_labels)
             test_selected = select_features((joint, cond, joint_diff, cond_diff))
             test_features.append(test_selected)
             test_files.append(test_file)
+
+    # Steganalysis 
+    steg_features = []
+    #steg_labels = np.array(df[1])
+    for steg_file in os.listdir(steg_files):
+        steg_f = os.path.join(steg_files, steg_file)
+        if os.path.isfile(steg_f):
+            samplerate, data = wavfile.read(steg_f)
+            steg_data = data.astype(np.float16) / np.iinfo(data.dtype).max
+            joint, cond, joint_diff, cond_diff = extract_features(steg_data)
+            steg_selected = select_features((joint, cond, joint_diff, cond_diff))
+            steg_features.append(steg_selected)
+            steg_files.append(steg_file)
     
     # Evaluate model accuracy and print it out.
-    accuracy = evaluate_model(svm, scaler, max_seq_len, test_features, test_labels, test_files)
+    accuracy, steg_final = evaluate_model(svm, scaler, max_seq_len, test_features, test_labels, test_files, steg_features, steg_files)
     print("Accuracy: ", accuracy)
+    print("Steg final ", steg_final)
 
     # Return to the menu
     print()
@@ -236,17 +264,17 @@ def option_three(training_files, training_labels, testing_files, testing_labels)
 # Options for the menu.
 def menu_options(choice):
     # Print all WAV file in the current directory maybe we can use this to select a directory for testing? Or we can just remove it.
-    global training_files, training_labels, testing_files, testing_labels, lsbBitNum
+    global training_files, training_labels, testing_files, testing_labels, lsbBitNum, steg_files
     if choice == "1":
-        if os.path.exists(testing_files):
-            if os.path.isfile(testing_files):
-                print(f"File name: {os.path.basename(testing_files)}")
-            elif os.path.isdir(testing_files):
-                print(f"Contents of {os.path.basename(testing_files)}:")
-                for item in os.listdir(testing_files):
+        if os.path.exists(steg_files):
+            if os.path.isfile(steg_files):
+                print(f"File name: {os.path.basename(steg_files)}")
+            elif os.path.isdir(steg_files):
+                print(f"Contents of {os.path.basename(steg_files)}:")
+                for item in os.listdir(steg_files):
                     print(f"- {item}")
         else:
-            print(f"Error: {testing_files} does not exist.")
+            print(f"Error: {steg_files} does not exist.")
         menu()
 
     # Select LSB bit number
@@ -261,11 +289,11 @@ def menu_options(choice):
             else:
                 print(f"Error: {lsbBitNum} is not a valid number. Please try again.")
         if lsbBitNum.isdigit() and int(lsbBitNum) == 9:
-            testing_files, testing_labels = "testing_data_all", "TestingLabels_all.csv"
-            training_files, training_labels = "training_data_all", "TrainingLabels_all.csv"
+            testing_files, testing_labels = "testing_data_folders/testing_data_all", "testing_labels_folder/TestingLabels_all.csv"
+            training_files, training_labels = "training_data_folders/training_data_all", "training_labels_folder/TrainingLabels_all.csv"
         else:
-            testing_files, testing_labels = f"testing_data_{lsbBitNum}lsb", f"TestingLabels_{lsbBitNum}lsb.csv"
-            training_files, training_labels = f"training_data_{lsbBitNum}lsb", f"TrainingLabels_{lsbBitNum}lsb.csv"
+            testing_files, testing_labels = f"testing_data_folders/testing_data_{lsbBitNum}lsb", f"testing_labels_folder/TestingLabels_{lsbBitNum}lsb.csv"
+            training_files, training_labels = f"training_data_folders/training_data_{lsbBitNum}lsb", f"training_labels_folder/TrainingLabels_{lsbBitNum}lsb.csv"
         print(f"Selected Training Files: {training_files}")
         menu()
 
@@ -277,7 +305,8 @@ def menu_options(choice):
 
     # Train and Test Model
     elif choice == "4":
-        option_three(training_files, training_labels, testing_files, testing_labels)    
+        print(training_labels)
+        option_three(training_files, training_labels, testing_files, testing_labels, steg_files)    
 
     # Exit Program
     elif choice == "5":
