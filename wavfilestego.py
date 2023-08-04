@@ -179,16 +179,26 @@ def evaluate_model(svm, scaler, max_seq_len, test_features, test_labels, test_fi
         for i, prediction in enumerate(predictions):
             f.write(f"{test_file[i]}, {test_labels[i]}, {prediction}\n")
 
+    # Check if steg_files is a directory or a file
+    if os.path.isdir(steg_files):
+        # If it's a directory, get all the .wav files in the directory
+        steg_files_list = [os.path.join(steg_files, f) for f in os.listdir(steg_files) if f.endswith('.wav')]
+    else:
+        # If it's a file, put it in a list
+        steg_files_list = [steg_files]
+
     # Output predictions to steg_output.csv
+    steg_final = []
     with open('steg_output.csv', 'w') as f:
         for i, steg_prediction in enumerate(steg_predictions):
-            f.write(f"{steg_files[i]}, 1, {steg_prediction}\n")
-
-    steg_final = pd.read_csv("steg_output.csv", header=None)
+            steg_file = os.path.basename(steg_files_list[i])
+            steg_string = f"{steg_file}, {steg_prediction}"
+            steg_final.append(steg_string)
+            f.write(f"{steg_string}\n")
 
     return accuracy, steg_final
 
-def getTestingFolderFilePath():
+def getStegFolderFilePath():
     while True:
         path = input("Enter the path of the file or folder (or enter 'q' to quit): ")
         if path.lower() == 'q':
@@ -196,18 +206,17 @@ def getTestingFolderFilePath():
             return path
         if os.path.exists(path):
             if os.path.isfile(path):
-                print(f"File {path} selected successfully.")
-                return path
+                # Check if the file is a .wav file
+                if path.endswith('.wav'):
+                    print(f"File {path} selected successfully.")
+                    return path
+                else:
+                    print(f"Error: {path} is not a .wav file. Please select a .wav file.")
             elif os.path.isdir(path):
                 print(f"Directory {path} selected successfully.")
                 return path
         else:
             print(f"Error: {path} does not exist. Please try again.")
-
-def option_two(): # Rename later
-    steg_testing = getTestingFolderFilePath()
-
-    return steg_testing
        
 
 def option_three(training_files, training_labels, testing_files, testing_labels, steg_files): # Rename later
@@ -239,23 +248,27 @@ def option_three(training_files, training_labels, testing_files, testing_labels,
             test_features.append(test_selected)
             test_files.append(test_file)
 
-    # Steganalysis 
     steg_features = []
-    #steg_labels = np.array(df[1])
-    for steg_file in os.listdir(steg_files):
-        steg_f = os.path.join(steg_files, steg_file)
-        if os.path.isfile(steg_f):
-            samplerate, data = wavfile.read(steg_f)
-            steg_data = data.astype(np.float16) / np.iinfo(data.dtype).max
-            joint, cond, joint_diff, cond_diff = extract_features(steg_data)
-            steg_selected = select_features((joint, cond, joint_diff, cond_diff))
-            steg_features.append(steg_selected)
-            steg_files.append(steg_file)
+    if os.path.isdir(steg_files):
+        for steg_file in os.listdir(steg_files):
+            steg_f = os.path.join(steg_files, steg_file)
+            if os.path.isfile(steg_f):
+                samplerate, data = wavfile.read(steg_f)
+                steg_data = data.astype(np.float16) / np.iinfo(data.dtype).max
+                joint, cond, joint_diff, cond_diff = extract_features(steg_data)
+                steg_selected = select_features((joint, cond, joint_diff, cond_diff))
+                steg_features.append(steg_selected)
+    else:
+        samplerate, data = wavfile.read(steg_files)
+        steg_data = data.astype(np.float16) / np.iinfo(data.dtype).max
+        joint, cond, joint_diff, cond_diff = extract_features(steg_data)
+        steg_selected = select_features((joint, cond, joint_diff, cond_diff))
+        steg_features.append(steg_selected)
     
     # Evaluate model accuracy and print it out.
     accuracy, steg_final = evaluate_model(svm, scaler, max_seq_len, test_features, test_labels, test_files, steg_features, steg_files)
     print("Accuracy: ", accuracy)
-    print("Steg final ", steg_final)
+    print("Steg final: ", steg_final)
 
     # Return to the menu
     print()
@@ -299,13 +312,12 @@ def menu_options(choice):
 
     # Select File to Analyze
     elif choice == "3":
-        steg_files = option_two()
+        steg_files = getStegFolderFilePath()
         print()
         menu()
 
     # Train and Test Model
     elif choice == "4":
-        print(training_labels)
         option_three(training_files, training_labels, testing_files, testing_labels, steg_files)    
 
     # Exit Program
