@@ -199,6 +199,9 @@ def evaluate_model(svm, scaler, max_seq_len, test_features, test_labels, test_fi
     return accuracy, steg_final
 
 def getStegFolderFilePath():
+    """
+    Takes a file/directory and makes sure there are WAV files
+    """
     while True:
         path = input("Enter the path of the file or folder (or enter 'q' to quit): ")
         if path.lower() == 'q':
@@ -219,7 +222,11 @@ def getStegFolderFilePath():
             print(f"Error: {path} does not exist. Please try again.")
        
 
-def option_four(training_files, training_labels, testing_files, testing_labels, steg_files): # Rename later
+def option_four(training_files, training_labels, testing_files, testing_labels, steg_files): 
+    """
+    Menu option that initiates the testing and evluating of the model and chosen
+    stegenalysis files
+    """
     # Train the model
     features, labels = [], []
     df = pd.read_csv(training_labels, header=None)
@@ -248,6 +255,7 @@ def option_four(training_files, training_labels, testing_files, testing_labels, 
             test_features.append(test_selected)
             test_files.append(test_file)
 
+    # Steganalysis of chosen files
     steg_features = []
     if os.path.isdir(steg_files):
         for steg_file in os.listdir(steg_files):
@@ -281,7 +289,11 @@ def option_four(training_files, training_labels, testing_files, testing_labels, 
 
 # Options for the menu.
 def menu_options(choice):
-    # Print all WAV file in the current directory maybe we can use this to select a directory for testing? Or we can just remove it.
+    """
+    Initiates menu options selected by user
+    """
+
+    # Lists files available for steganalysis 
     global training_files, training_labels, testing_files, testing_labels, lsbBitNum, steg_files
     if choice == "1":
         if os.path.exists(steg_files):
@@ -342,7 +354,9 @@ def menu_options(choice):
 
 # Menu for the Program
 def menu():
-    #testing_files, testing_label = "testing_data", "TestingLabels.csv"
+    """
+    Lists menu options for the user
+    """
 
     print("+-----------------------------------------------+")
     print("|************WAV File Steganalysis**************|")
