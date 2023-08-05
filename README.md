@@ -13,7 +13,7 @@ https://ieeexplore.ieee.org/document/4761650
 The executable file (wavfilestego.exe) can be found directly in the wavfilestego directory. 
 
 ## Execution
-The executable was created with PyInstaller. 
+The executable was created with PyInstaller. Use python -m PyInstaller wavfilestego.py if accessing from GitHub.
 
 No command line arguments are required for the program. There are 9 training folders and 9
 testing folders that contain WAV files. There is a .csv file for each folder that labels the file
