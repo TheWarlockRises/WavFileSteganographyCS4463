@@ -21,7 +21,7 @@ import sys
 import csv
 
 choice = 0
-lsbBitNum = 1
+lsbBitNum = 0
 testing_files, testing_labels = "testing_data_folders", "testing_labels_folder"
 training_files, training_labels = "training_data_folders", "training_labels_folder"
 steg_files = "steganalysis_files"
@@ -219,7 +219,7 @@ def getStegFolderFilePath():
             print(f"Error: {path} does not exist. Please try again.")
        
 
-def option_three(training_files, training_labels, testing_files, testing_labels, steg_files): # Rename later
+def option_four(training_files, training_labels, testing_files, testing_labels, steg_files): # Rename later
     # Train the model
     features, labels = [], []
     df = pd.read_csv(training_labels, header=None)
@@ -267,8 +267,13 @@ def option_three(training_files, training_labels, testing_files, testing_labels,
     
     # Evaluate model accuracy and print it out.
     accuracy, steg_final = evaluate_model(svm, scaler, max_seq_len, test_features, test_labels, test_files, steg_features, steg_files)
-    print("Accuracy: ", accuracy)
-    print("Steg final: ", steg_final)
+    print(f"With {accuracy * 100}% confidence, here are the results!")
+    for row in steg_final:
+        filename, label = row.split(', ')
+        if label == 0:
+            print(f"{filename} has no hidden file.")
+        else:
+            print(f"{filename} has a hidden file.")
 
     # Return to the menu
     print()
@@ -295,13 +300,13 @@ def menu_options(choice):
         while True:
             lsbBitNum = input("Enter a LSB bit value between 1 and 9 (9 selects ALL) (or enter 'q' to quit): ")
             if lsbBitNum.lower() == 'q':
-                lsbBitNum = 1
+                lsbBitNum = 0
                 break
             elif lsbBitNum.isdigit() and 1 <= int(lsbBitNum) <= 9:
                 break
             else:
                 print(f"Error: {lsbBitNum} is not a valid number. Please try again.")
-        if lsbBitNum.isdigit() and int(lsbBitNum) == 9:
+        if int(lsbBitNum) == 9:
             testing_files, testing_labels = "testing_data_folders/testing_data_all", "testing_labels_folder/TestingLabels_all.csv"
             training_files, training_labels = "training_data_folders/training_data_all", "training_labels_folder/TrainingLabels_all.csv"
         else:
@@ -318,7 +323,12 @@ def menu_options(choice):
 
     # Train and Test Model
     elif choice == "4":
-        option_three(training_files, training_labels, testing_files, testing_labels, steg_files)    
+        if lsbBitNum == 0:
+            print()
+            print("Please enter the LSB value for training.")
+            print()
+            menu()
+        option_four(training_files, training_labels, testing_files, testing_labels, steg_files)    
 
     # Exit Program
     elif choice == "5":
