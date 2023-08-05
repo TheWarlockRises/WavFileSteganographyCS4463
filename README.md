@@ -17,7 +17,8 @@ The executable was created with PyInstaller.
 
 No command line arguments are required for the program. There are 9 training folders and 9
 testing folders that contain WAV files. There is a .csv file for each folder that labels the file
-names with a 0 for no files hidden and 1 for a hidden file. 
+names with a 0 for no files hidden and 1 for a hidden file. Start the program in the command line by inputting the following:
+./wavfilestego.exe
 
 ## Menu Options
 You navigate the program through a menu interface. 
@@ -35,7 +36,7 @@ You are given the option to input a file or directory to be directly analyzed by
 steganalysis_files/Test.wav
 
 ### Train and Test Model
-You must enter the LSB value for training before reaching this step. If you try to train and test the model first, it will take you back to the main menu. It will take a few moments, but the program will output a list of predictions about if a file is hidden or not as well as the degree of confidence (accuracy) from the program. If you chose option 9 (the default) from the LSB value selection, the program may take a few minutes to produce output. 
+You must enter the LSB value for training before reaching this step. If you try to train and test the model first, it will take you back to the main menu. It will take a few moments, but the program will output a list of predictions about if a file is hidden or not as well as the degree of confidence (accuracy) from the program. If you chose option 9 (the default) from the LSB value selection, the program may take a few minutes to produce output. If you would like to see the results of the testing by the prorgam to determine accuracy, you can check out test_output.csv.
 
 ### Exit Program 
 This exits the program.
