@@ -151,6 +151,11 @@ def evaluate_model(svm, scaler, max_seq_len, test_features, test_labels, test_fi
     Evaluate model on test data 
     """
 
+    # If Steg Features is empty return to menu and give warning.
+    if not steg_features:
+        print("Error: The Selected Folder Doesn't Contain WAV Files\n")
+        menu()
+
     # Pad test features to convert into a numpy array
     test_padded = pad_sequences(test_features, maxlen=max_seq_len, padding='post')
     steg_padded = pad_sequences(steg_features, maxlen=max_seq_len, padding='post')
@@ -248,22 +253,26 @@ def option_four(training_files, training_labels, testing_files, testing_labels, 
             test_features.append(test_selected)
             test_files.append(test_file)
 
+    # Perform Steganalysis on Steg Files
     steg_features = []
     if os.path.isdir(steg_files):
         for steg_file in os.listdir(steg_files):
             steg_f = os.path.join(steg_files, steg_file)
-            if os.path.isfile(steg_f):
+            if os.path.isfile(steg_f) and steg_f.endswith('.wav'):
                 samplerate, data = wavfile.read(steg_f)
                 steg_data = data.astype(np.float16) / np.iinfo(data.dtype).max
                 joint, cond, joint_diff, cond_diff = extract_features(steg_data)
                 steg_selected = select_features((joint, cond, joint_diff, cond_diff))
                 steg_features.append(steg_selected)
+            else:
+                print(f"Error: {steg_f} is not a WAV file.")
     else:
-        samplerate, data = wavfile.read(steg_files)
-        steg_data = data.astype(np.float16) / np.iinfo(data.dtype).max
-        joint, cond, joint_diff, cond_diff = extract_features(steg_data)
-        steg_selected = select_features((joint, cond, joint_diff, cond_diff))
-        steg_features.append(steg_selected)
+        if steg_files.endswith('.wav'):
+            samplerate, data = wavfile.read(steg_files)
+            steg_data = data.astype(np.float16) / np.iinfo(data.dtype).max
+            joint, cond, joint_diff, cond_diff = extract_features(steg_data)
+            steg_selected = select_features((joint, cond, joint_diff, cond_diff))
+            steg_features.append(steg_selected)
     
     # Evaluate model accuracy and print it out.
     accuracy, steg_final = evaluate_model(svm, scaler, max_seq_len, test_features, test_labels, test_files, steg_features, steg_files)
